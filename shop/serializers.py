@@ -7,12 +7,12 @@ class CategorySerializer(ModelSerializer):
 
     class Meta:
         model = Category
-        fields = ["id", "name", "date_created", "date_updated"]
+        fields = ["id", "name", "description", "date_created", "date_updated", "active"]
 
 
 class ProductSerializer(ModelSerializer):
 
     class Meta:
         model = Product
-        fields = ["id", "name", "category", "date_created", "date_updated"]
+        fields = ["id", "name", "description", "category", "date_created", "date_updated", "active"]
 

@@ -1,21 +1,30 @@
-from rest_framework.views import APIView
-from rest_framework.response import Response
+from rest_framework.viewsets import ModelViewSet, ReadOnlyModelViewSet
+
 
 from shop.models import Category, Product
 from shop.serializers import CategorySerializer, ProductSerializer
 
 
-class CategoryAPIView(APIView):
+class CategoryViewset(ReadOnlyModelViewSet):
 
-    def get(self, *args, **kwargs):
-        categories = Category.objects.all()
-        serializer = CategorySerializer(categories, many=True)
-        return Response(serializer.data)
-    
+    serializer_class = CategorySerializer
 
-class ProductAPIView(APIView):
+    def get_queryset(self):
+        return Category.objects.filter(active=True)
 
-    def get(self, *args, **kwargs):
-        products = Product.objects.all()
-        serializer = ProductSerializer(products, many=True)
-        return Response(serializer.data)
+
+class ProductViewset(ModelViewSet):
+
+    serializer_class = ProductSerializer
+
+    def get_queryset(self):
+        # Nous récupérons tous les produits dans une variable nommée queryset
+        queryset = Product.objects.filter(active=True)
+        # Vérifions la présence du paramètre ‘category_id’ dans l’url et si oui alors appliquons notre filtre
+        category_id = self.request.GET.get('category_id')
+        not_active = self.request.GET.get('not_active')
+        if category_id is not None:
+            queryset = queryset.filter(category_id=category_id)
+        elif not_active:
+            queryset = Product.objects.filter(active=False)
+        return queryset
