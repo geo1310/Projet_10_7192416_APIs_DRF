@@ -1,6 +1,10 @@
+from rest_framework.response import Response
+from rest_framework.decorators import action
+
 from rest_framework.viewsets import ModelViewSet, ReadOnlyModelViewSet
 
 from shop.models import Category, Product, Article
+
 from shop.serializers import (
     CategoryDetailSerializer,
     CategoryListSerializer,
@@ -10,23 +14,39 @@ from shop.serializers import (
 )
 
 
-class CategoryViewset(ReadOnlyModelViewSet):
+class MultipleSerializerMixin:
+    # Un mixin est une classe qui ne fonctionne pas de façon autonome
+    # Elle permet d'ajouter des fonctionnalités aux classes qui les étendent
+
+    detail_serializer_class = None
+
+    def get_serializer_class(self):
+        # Notre mixin détermine quel serializer à utiliser
+        # même si elle ne sait pas ce que c'est ni comment l'utiliser
+        if self.action == 'retrieve' and self.detail_serializer_class is not None:
+            # Si l'action demandée est le détail alors nous retournons le serializer de détail
+            return self.detail_serializer_class
+        return super().get_serializer_class()
+
+
+class CategoryViewset(MultipleSerializerMixin, ReadOnlyModelViewSet):
 
     serializer_class = CategoryListSerializer
     # Ajoutons un attribut de classe qui nous permet de définir notre serializer de détail
     detail_serializer_class = CategoryDetailSerializer
 
     def get_queryset(self):
+
         return Category.objects.filter(active=True)
+    
+    @action(detail=True, methods=['post'])
+    def disable(self, request, pk): # pk : clé primaire
+        self.get_object().disable()
+        return Response() # réponse vide c est a dire 200
+        
 
-    def get_serializer_class(self):
-        # Si l'action demandée est retrieve nous retournons le serializer de détail
-        if self.action == "retrieve":
-            return self.detail_serializer_class
-        return super().get_serializer_class()
 
-
-class ProductViewset(ModelViewSet):
+class ProductViewset(MultipleSerializerMixin, ModelViewSet):
 
     serializer_class = ProductListSerializer
     detail_serializer_class = ProductDetailSerializer
@@ -34,11 +54,11 @@ class ProductViewset(ModelViewSet):
     def get_queryset(self):
 
         return Product.objects.filter(active=True)
-
-    def get_serializer_class(self):
-        if self.action == "retrieve":
-            return self.detail_serializer_class
-        return super().get_serializer_class()
+    
+    @action(detail=True, methods=['post'])
+    def disable(self, request, pk): # pk : clé primaire
+        self.get_object().disable()
+        return Response() # réponse vide c est a dire 200
 
 
 class ArticleViewset(ReadOnlyModelViewSet):
