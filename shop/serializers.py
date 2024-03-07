@@ -1,4 +1,4 @@
-from rest_framework.serializers import ModelSerializer, SerializerMethodField
+from rest_framework.serializers import ModelSerializer, SerializerMethodField, ValidationError
 
 from shop.models import Category, Product, Article
 
@@ -7,7 +7,7 @@ class ProductListSerializer(ModelSerializer):
 
     class Meta:
         model = Product
-        fields = ["id", "date_created", "date_updated", "name"]
+        fields = ["id", "date_created", "date_updated", "name", "active"]
 
 
 class ProductDetailSerializer(ModelSerializer):
@@ -37,7 +37,24 @@ class CategoryListSerializer(ModelSerializer):
 
     class Meta:
         model = Category
-        fields = ["id", "date_created", "date_updated", "name"]
+        fields = ["id", "date_created", "date_updated", "name", "description", "active"]
+
+    def validate_name(self, value):
+        # Controle sur un champ unique
+        # Nous vérifions que la catégorie existe
+        if Category.objects.filter(name=value).exists():
+        # En cas d'erreur, DRF nous met à disposition l'exception ValidationError
+            raise ValidationError('Category already exists')
+        return value
+    
+    def validate(self, data):
+        # Controle global sur tous les champs
+        # Effectuons le contrôle sur la présence du nom dans la description
+        if data['name'] not in data['description']:
+        # Levons une ValidationError si ça n'est pas le cas
+            raise ValidationError('Name must be in description')
+        return data
+
 
 
 class CategoryDetailSerializer(ModelSerializer):
@@ -65,6 +82,8 @@ class CategoryDetailSerializer(ModelSerializer):
 
 class ArticleSerializer(ModelSerializer):
 
+    #product = SerializerMethodField()
+
     class Meta:
         model = Article
         fields = [
@@ -77,3 +96,26 @@ class ArticleSerializer(ModelSerializer):
             "date_updated",
             "active",
         ]
+
+    def get_product(self, instance):
+        # Assurez-vous que 'product' est une instance de modèle valide
+        if instance.product:
+
+            serializer = ProductListSerializer(instance.product)
+            return serializer.data
+        
+        return None  # ou une autre valeur par défaut si nécessaire
+    
+    def validate(self, data):
+        # Controle global sur tous les champs
+        
+        if data['price'] <= 1:
+        # Levons une ValidationError si ça n'est pas le cas
+            raise ValidationError('Prix trop bas ( inférieur à 1€ )')
+        elif not data['product'].active:
+            raise ValidationError("Le produit n'est pas actif.")
+        return data
+
+
+
+

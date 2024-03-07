@@ -43,7 +43,15 @@ class CategoryViewset(MultipleSerializerMixin, ReadOnlyModelViewSet):
     def disable(self, request, pk): # pk : clé primaire
         self.get_object().disable()
         return Response() # réponse vide c est a dire 200
-        
+
+
+class AdminCategoryViewset(MultipleSerializerMixin, ModelViewSet):
+    
+    serializer_class = CategoryListSerializer
+    detail_serializer_class = CategoryDetailSerializer
+ 
+    def get_queryset(self):
+        return Category.objects.all()
 
 
 class ProductViewset(MultipleSerializerMixin, ModelViewSet):
@@ -67,3 +75,11 @@ class ArticleViewset(ReadOnlyModelViewSet):
 
     def get_queryset(self):
         return Article.objects.filter(active=True)
+
+
+class AdminArticleViewset(ModelViewSet):
+    
+    serializer_class = ArticleSerializer
+ 
+    def get_queryset(self):
+        return Article.objects.all()
